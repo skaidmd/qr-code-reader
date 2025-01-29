@@ -25,11 +25,12 @@
             color: gray;
             margin-top: 10px;
         }
-        button {
-            margin: 10px;
-            padding: 10px;
-            font-size: 16px;
-            cursor: pointer;
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
         }
         .card-container {
             display: flex;
@@ -49,34 +50,37 @@
             word-wrap: break-word;
             overflow-wrap: break-word;
         }
-        .delete-button, .copy-button {
+        .delete-icon {
             cursor: pointer;
-            background-color: #ff4d4d;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
             position: absolute;
             top: 10px;
             right: 10px;
+            font-size: 16px;
+            color: red;
         }
-        .copy-button {
-            background-color: #4CAF50;
-            right: 80px;
+        .copy-icon {
+            cursor: pointer;
+            margin-left: 5px;
+            color: #4CAF50;
+        }
+        .qr-content {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
     </style>
 </head>
 <body>
     <h1>QRコードリーダー</h1>
-    <button id="toggleCamera">カメラのオン/オフ</button>
-    <button id="resetResult">結果をリセット</button>
+    <div class="controls">
+        <button id="toggleCamera">📷 カメラ オン</button>
+        <p>読み取り件数: <span id="scanCount">0</span> 件</p>
+        <button id="resetResult">🔄 結果をリセット</button>
+    </div>
     <video id="video" autoplay playsinline></video>
     <canvas id="canvas"></canvas>
-    <p>読み取ったQRコードの内容:</p>
-    <p id="result">読み取り中...</p>
-    <p>読み取り件数: <span id="scanCount">0</span> 件</p>
+    <p id="result" style="word-wrap: break-word; overflow-wrap: break-word;">読み取り中...</p>
     <div class="card-container" id="scanHistory"></div>
-    <p class="version">Version 1.7.0</p>
+    <p class="version">Version 1.8.0</p>
 
     <script>
         const video = document.getElementById('video');
@@ -95,11 +99,11 @@
             try {
                 const constraints = { video: { facingMode: { ideal: "environment" }, zoom: 3.5 } };
                 stream = await navigator.mediaDevices.getUserMedia(constraints);
-                console.log("Camera Stream:", stream);
                 video.srcObject = stream;
                 video.play();
                 scanning = true;
                 scanQR();
+                toggleCameraButton.textContent = "📴 カメラ オフ";
             } catch (error) {
                 console.error('カメラのアクセスに失敗しました:', error);
                 resultElement.textContent = 'カメラを利用できません。';
@@ -111,8 +115,17 @@
                 stream.getTracks().forEach(track => track.stop());
                 video.srcObject = null;
                 scanning = false;
+                toggleCameraButton.textContent = "📷 カメラ オン";
             }
         }
+
+        toggleCameraButton.addEventListener('click', () => {
+            if (scanning) {
+                stopCamera();
+            } else {
+                startCamera();
+            }
+        });
 
         function scanQR() {
             if (!scanning) return;
@@ -125,7 +138,6 @@
                     inversionAttempts: 'attemptBoth'
                 });
                 if (code && !scannedResults.has(code.data)) {
-                    console.log("QRコード検出", code);
                     resultElement.textContent = `QRコードの内容: ${code.data}`;
                     addToHistory(code.data);
                     scannedResults.set(code.data, true);
@@ -138,16 +150,13 @@
             const timestamp = new Date().toLocaleString();
             const no = scannedResults.size + 1;
             const qrContent = data.startsWith("http") ? `<a href="${data}" target="_blank">${data}</a>` : data;
-            const capture = `<img src="${captureQR()}" width="100">`;
 
             const card = document.createElement("div");
             card.classList.add("card");
             card.innerHTML = `
-                <button class="copy-button" onclick="copyText('${data}')">コピー</button>
-                <button class="delete-button" onclick="this.parentElement.remove(); updateCount()">削除</button>
+                <span class="delete-icon" onclick="this.parentElement.remove(); updateCount()">❌</span>
                 <p><strong>No:</strong> ${no}</p>
-                <p><strong>キャプチャ:</strong> ${capture}</p>
-                <p><strong>QRコード:</strong> ${qrContent}</p>
+                <p class="qr-content"><strong>QRコード:</strong> ${qrContent} <span class="copy-icon" onclick="copyText('${data}')">📋</span></p>
                 <p><strong>読み取り日時:</strong> ${timestamp}</p>
             `;
             scanHistoryContainer.appendChild(card);
@@ -164,13 +173,12 @@
             });
         }
 
-        function captureQR() {
-            const captureCanvas = document.createElement("canvas");
-            captureCanvas.width = canvas.width;
-            captureCanvas.height = canvas.height;
-            captureCanvas.getContext("2d").drawImage(canvas, 0, 0);
-            return captureCanvas.toDataURL("image/png");
-        }
+        resetResultButton.addEventListener('click', () => {
+            resultElement.textContent = "読み取り中...";
+            scanHistoryContainer.innerHTML = "";
+            scannedResults.clear();
+            updateCount();
+        });
 
         startCamera();
     </script>
