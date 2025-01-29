@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QRコードリーダー</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        video {
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto;
+            display: block;
+        }
+        canvas {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>QRコードリーダー</h1>
+    <video id="video" autoplay></video>
+    <canvas id="canvas"></canvas>
+    <p>読み取ったQRコードの内容:</p>
+    <p id="result">読み取り中...</p>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const resultElement = document.getElementById('result');
+        const ctx = canvas.getContext('2d');
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = stream;
+                requestAnimationFrame(scanQR);
+            } catch (error) {
+                console.error('カメラのアクセスに失敗しました:', error);
+                resultElement.textContent = 'カメラを利用できません。';
+            }
+        }
+
+        function scanQR() {
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                if (code) {
+                    resultElement.textContent = `QRコードの内容: ${code.data}`;
+                    return;
+                }
+            }
+            requestAnimationFrame(scanQR);
+        }
+
+        startCamera();
+    </script>
+</body>
+</html>
