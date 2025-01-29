@@ -91,7 +91,7 @@
     <canvas id="canvas"></canvas>
     <p id="result" style="word-wrap: break-word; overflow-wrap: break-word;">読み取り中...</p>
     <div class="card-container" id="scanHistory"></div>
-    <p class="version">Version 2.0.0</p>
+    <p class="version">Version 2.1.0</p>
 
     <script>
         const video = document.getElementById('video');
@@ -104,7 +104,7 @@
         const ctx = canvas.getContext('2d');
         let stream = null;
         let scanning = false;
-        let scannedResults = new Map();
+        let scannedResults = new Set();
 
         async function startCamera() {
             try {
@@ -130,43 +130,32 @@
             }
         }
 
-        function captureImage(code) {
-            ctx.strokeStyle = "red";
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.moveTo(code.location.topLeftCorner.x, code.location.topLeftCorner.y);
-            ctx.lineTo(code.location.topRightCorner.x, code.location.topRightCorner.y);
-            ctx.lineTo(code.location.bottomRightCorner.x, code.location.bottomRightCorner.y);
-            ctx.lineTo(code.location.bottomLeftCorner.x, code.location.bottomLeftCorner.y);
-            ctx.closePath();
-            ctx.stroke();
+        function captureImage() {
             return canvas.toDataURL("image/png");
         }
 
         function scanQR() {
             if (!scanning) return;
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                    inversionAttempts: 'attemptBoth'
-                });
-                if (code && !scannedResults.has(code.data)) {
-                    resultElement.textContent = `QRコードの内容: ${code.data}`;
-                    addToHistory(code, code.data);
-                    scannedResults.set(code.data, true);
-                }
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: 'attemptBoth'
+            });
+            if (code && !scannedResults.has(code.data)) {
+                scannedResults.add(code.data);
+                resultElement.textContent = `QRコードの内容: ${code.data}`;
+                addToHistory(code.data);
             }
             requestAnimationFrame(scanQR);
         }
 
-        function addToHistory(code, data) {
+        function addToHistory(data) {
             const timestamp = new Date().toLocaleString();
-            const no = scannedResults.size + 1;
+            const no = scannedResults.size;
             const qrContent = data.startsWith("http") ? `<a href="${data}" target="_blank">${data}</a>` : data;
-            const capture = captureImage(code);
+            const capture = captureImage();
 
             const card = document.createElement("div");
             card.classList.add("card");
@@ -180,6 +169,27 @@
             scanHistoryContainer.appendChild(card);
             updateCount();
         }
+
+        function updateCount() {
+            scanCountElement.textContent = document.querySelectorAll('.card').length;
+        }
+
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert("コピーしました: " + text);
+            });
+        }
+
+        toggleCameraButton.addEventListener('click', () => {
+            scanning ? stopCamera() : startCamera();
+        });
+
+        resetResultButton.addEventListener('click', () => {
+            resultElement.textContent = "読み取り中...";
+            scanHistoryContainer.innerHTML = "";
+            scannedResults.clear();
+            updateCount();
+        });
 
         startCamera();
     </script>
