@@ -30,6 +30,19 @@
             font-size: 16px;
             cursor: pointer;
         }
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+            width: 80%;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
     </style>
 </head>
 <body>
@@ -40,7 +53,16 @@
     <canvas id="canvas"></canvas>
     <p>読み取ったQRコードの内容:</p>
     <p id="result">読み取り中...</p>
-    <p class="version">Version 1.2.0</p>
+    <table>
+        <thead>
+            <tr>
+                <th>読み取った内容</th>
+                <th>読み取り日時</th>
+            </tr>
+        </thead>
+        <tbody id="scanHistory"></tbody>
+    </table>
+    <p class="version">Version 1.3.0</p>
 
     <script>
         const video = document.getElementById('video');
@@ -48,6 +70,7 @@
         const resultElement = document.getElementById('result');
         const toggleCameraButton = document.getElementById('toggleCamera');
         const resetResultButton = document.getElementById('resetResult');
+        const scanHistoryTable = document.getElementById('scanHistory');
         const ctx = canvas.getContext('2d');
         let stream = null;
         let scanning = false;
@@ -88,6 +111,7 @@
                 if (code) {
                     console.log("QRコード検出", code);
                     resultElement.textContent = `QRコードの内容: ${code.data}`;
+                    addToHistory(code.data);
                     ctx.beginPath();
                     ctx.moveTo(code.location.topLeftCorner.x, code.location.topLeftCorner.y);
                     ctx.lineTo(code.location.topRightCorner.x, code.location.topRightCorner.y);
@@ -102,6 +126,13 @@
             requestAnimationFrame(scanQR);
         }
 
+        function addToHistory(data) {
+            const timestamp = new Date().toLocaleString();
+            const row = document.createElement("tr");
+            row.innerHTML = `<td>${data}</td><td>${timestamp}</td>`;
+            scanHistoryTable.appendChild(row);
+        }
+
         toggleCameraButton.addEventListener('click', () => {
             if (scanning) {
                 stopCamera();
@@ -114,6 +145,7 @@
 
         resetResultButton.addEventListener('click', () => {
             resultElement.textContent = "読み取り中...";
+            scanHistoryTable.innerHTML = "";
         });
 
         startCamera();
