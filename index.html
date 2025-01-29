@@ -34,7 +34,7 @@
         table {
             margin: 20px auto;
             border-collapse: collapse;
-            width: 80%;
+            width: 100%;
             text-align: center;
         }
         th, td {
@@ -59,14 +59,14 @@
         <thead>
             <tr>
                 <th>No</th>
+                <th>キャプチャ</th>
                 <th>QRコード</th>
                 <th>読み取り日時</th>
-                <th>キャプチャ</th>
             </tr>
         </thead>
         <tbody id="scanHistory"></tbody>
     </table>
-    <p class="version">Version 1.6.0</p>
+    <p class="version">Version 1.6.1</p>
 
     <script>
         const video = document.getElementById('video');
@@ -83,7 +83,7 @@
 
         async function startCamera() {
             try {
-                const constraints = { video: { facingMode: { ideal: "environment" }, zoom: 2.0 } };
+                const constraints = { video: { facingMode: { ideal: "environment" }, zoom: 3.0 } };
                 stream = await navigator.mediaDevices.getUserMedia(constraints);
                 console.log("Camera Stream:", stream);
                 video.srcObject = stream;
@@ -130,7 +130,7 @@
             const no = scannedResults.size + 1;
             const qrContent = data.startsWith("http") ? `<a href="${data}" target="_blank">${data}</a>` : data;
             const capture = `<img src="${captureQR()}" width="100">`;
-            row.innerHTML = `<td>${no}</td><td>${qrContent}</td><td>${timestamp}</td><td>${capture}</td>`;
+            row.innerHTML = `<td>${no}</td><td>${capture}</td><td>${qrContent}</td><td>${timestamp}</td>`;
             scanHistoryTable.appendChild(row);
             scanCountElement.textContent = scannedResults.size;
         }
