@@ -31,18 +31,38 @@
             font-size: 16px;
             cursor: pointer;
         }
-        table {
-            margin: 20px auto;
-            border-collapse: collapse;
-            width: 100%;
-            text-align: center;
+        .card-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
         }
-        th, td {
-            border: 1px solid black;
-            padding: 8px;
+        .card {
+            width: 300px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: left;
+            background-color: #f9f9f9;
+            position: relative;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
-        th {
-            background-color: #f2f2f2;
+        .delete-button, .copy-button {
+            cursor: pointer;
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        .copy-button {
+            background-color: #4CAF50;
+            right: 80px;
         }
     </style>
 </head>
@@ -55,18 +75,8 @@
     <p>読み取ったQRコードの内容:</p>
     <p id="result">読み取り中...</p>
     <p>読み取り件数: <span id="scanCount">0</span> 件</p>
-    <table>
-        <thead>
-            <tr>
-                <th>No</th>
-                <th>キャプチャ</th>
-                <th>QRコード</th>
-                <th>読み取り日時</th>
-            </tr>
-        </thead>
-        <tbody id="scanHistory"></tbody>
-    </table>
-    <p class="version">Version 1.6.1</p>
+    <div class="card-container" id="scanHistory"></div>
+    <p class="version">Version 1.7.0</p>
 
     <script>
         const video = document.getElementById('video');
@@ -74,7 +84,7 @@
         const resultElement = document.getElementById('result');
         const toggleCameraButton = document.getElementById('toggleCamera');
         const resetResultButton = document.getElementById('resetResult');
-        const scanHistoryTable = document.getElementById('scanHistory');
+        const scanHistoryContainer = document.getElementById('scanHistory');
         const scanCountElement = document.getElementById('scanCount');
         const ctx = canvas.getContext('2d');
         let stream = null;
@@ -83,7 +93,7 @@
 
         async function startCamera() {
             try {
-                const constraints = { video: { facingMode: { ideal: "environment" }, zoom: 3.0 } };
+                const constraints = { video: { facingMode: { ideal: "environment" }, zoom: 3.5 } };
                 stream = await navigator.mediaDevices.getUserMedia(constraints);
                 console.log("Camera Stream:", stream);
                 video.srcObject = stream;
@@ -126,13 +136,32 @@
 
         function addToHistory(data) {
             const timestamp = new Date().toLocaleString();
-            const row = document.createElement("tr");
             const no = scannedResults.size + 1;
             const qrContent = data.startsWith("http") ? `<a href="${data}" target="_blank">${data}</a>` : data;
             const capture = `<img src="${captureQR()}" width="100">`;
-            row.innerHTML = `<td>${no}</td><td>${capture}</td><td>${qrContent}</td><td>${timestamp}</td>`;
-            scanHistoryTable.appendChild(row);
-            scanCountElement.textContent = scannedResults.size;
+
+            const card = document.createElement("div");
+            card.classList.add("card");
+            card.innerHTML = `
+                <button class="copy-button" onclick="copyText('${data}')">コピー</button>
+                <button class="delete-button" onclick="this.parentElement.remove(); updateCount()">削除</button>
+                <p><strong>No:</strong> ${no}</p>
+                <p><strong>キャプチャ:</strong> ${capture}</p>
+                <p><strong>QRコード:</strong> ${qrContent}</p>
+                <p><strong>読み取り日時:</strong> ${timestamp}</p>
+            `;
+            scanHistoryContainer.appendChild(card);
+            updateCount();
+        }
+
+        function updateCount() {
+            scanCountElement.textContent = document.querySelectorAll('.card').length;
+        }
+
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert("コピーしました: " + text);
+            });
         }
 
         function captureQR() {
@@ -142,23 +171,6 @@
             captureCanvas.getContext("2d").drawImage(canvas, 0, 0);
             return captureCanvas.toDataURL("image/png");
         }
-
-        toggleCameraButton.addEventListener('click', () => {
-            if (scanning) {
-                stopCamera();
-                toggleCameraButton.textContent = "カメラをオン";
-            } else {
-                startCamera();
-                toggleCameraButton.textContent = "カメラをオフ";
-            }
-        });
-
-        resetResultButton.addEventListener('click', () => {
-            resultElement.textContent = "読み取り中...";
-            scanHistoryTable.innerHTML = "";
-            scannedResults.clear();
-            scanCountElement.textContent = "0";
-        });
 
         startCamera();
     </script>
