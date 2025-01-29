@@ -23,7 +23,7 @@
 </head>
 <body>
     <h1>QRコードリーダー</h1>
-    <video id="video" autoplay></video>
+    <video id="video" autoplay playsinline></video>
     <canvas id="canvas"></canvas>
     <p>読み取ったQRコードの内容:</p>
     <p id="result">読み取り中...</p>
@@ -36,8 +36,11 @@
 
         async function startCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                const constraints = { video: { facingMode: { ideal: "environment" } } };
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                console.log("Camera Stream:", stream); // デバッグ用
                 video.srcObject = stream;
+                video.play();
                 requestAnimationFrame(scanQR);
             } catch (error) {
                 console.error('カメラのアクセスに失敗しました:', error);
