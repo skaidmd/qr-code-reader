@@ -9,13 +9,18 @@
         body {
             font-family: Arial, sans-serif;
             text-align: center;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
         }
         video {
             width: 100%;
             max-width: 400px;
             height: auto;
-            margin-top: 20px;
+            margin: 20px auto;
             display: block;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         canvas {
             display: none;
@@ -36,26 +41,27 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 10px;
+            gap: 15px;
             margin-top: 20px;
         }
         .card {
-            width: 300px;
+            width: 320px;
             border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 10px;
+            border-radius: 10px;
+            padding: 15px;
             text-align: left;
-            background-color: #f9f9f9;
+            background-color: #fff;
             position: relative;
             word-wrap: break-word;
             overflow-wrap: break-word;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         .delete-icon {
             cursor: pointer;
             position: absolute;
             top: 10px;
             right: 10px;
-            font-size: 16px;
+            font-size: 18px;
             color: red;
         }
         .copy-icon {
@@ -66,6 +72,11 @@
         .qr-content {
             word-wrap: break-word;
             overflow-wrap: break-word;
+        }
+        .capture-image {
+            width: 100%;
+            border-radius: 5px;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -80,7 +91,7 @@
     <canvas id="canvas"></canvas>
     <p id="result" style="word-wrap: break-word; overflow-wrap: break-word;">読み取り中...</p>
     <div class="card-container" id="scanHistory"></div>
-    <p class="version">Version 1.8.0</p>
+    <p class="version">Version 1.9.0</p>
 
     <script>
         const video = document.getElementById('video');
@@ -119,13 +130,13 @@
             }
         }
 
-        toggleCameraButton.addEventListener('click', () => {
-            if (scanning) {
-                stopCamera();
-            } else {
-                startCamera();
-            }
-        });
+        function captureImage() {
+            const captureCanvas = document.createElement("canvas");
+            captureCanvas.width = canvas.width;
+            captureCanvas.height = canvas.height;
+            captureCanvas.getContext("2d").drawImage(canvas, 0, 0);
+            return captureCanvas.toDataURL("image/png");
+        }
 
         function scanQR() {
             if (!scanning) return;
@@ -150,12 +161,14 @@
             const timestamp = new Date().toLocaleString();
             const no = scannedResults.size + 1;
             const qrContent = data.startsWith("http") ? `<a href="${data}" target="_blank">${data}</a>` : data;
+            const capture = captureImage();
 
             const card = document.createElement("div");
             card.classList.add("card");
             card.innerHTML = `
                 <span class="delete-icon" onclick="this.parentElement.remove(); updateCount()">❌</span>
                 <p><strong>No:</strong> ${no}</p>
+                <img class="capture-image" src="${capture}" alt="QRコードキャプチャ">
                 <p class="qr-content"><strong>QRコード:</strong> ${qrContent} <span class="copy-icon" onclick="copyText('${data}')">📋</span></p>
                 <p><strong>読み取り日時:</strong> ${timestamp}</p>
             `;
@@ -172,13 +185,6 @@
                 alert("コピーしました: " + text);
             });
         }
-
-        resetResultButton.addEventListener('click', () => {
-            resultElement.textContent = "読み取り中...";
-            scanHistoryContainer.innerHTML = "";
-            scannedResults.clear();
-            updateCount();
-        });
 
         startCamera();
     </script>
