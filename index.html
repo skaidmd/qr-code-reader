@@ -11,8 +11,8 @@
             text-align: center;
         }
         video {
-            width: 100%;
-            max-width: 400px;
+            width: 80%;
+            max-width: 300px;
             margin: 20px auto;
             display: block;
         }
@@ -24,49 +24,70 @@
             color: gray;
             margin-top: 10px;
         }
+        button {
+            margin: 10px;
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
     <h1>QRコードリーダー</h1>
+    <button id="toggleCamera">カメラのオン/オフ</button>
+    <button id="resetResult">結果をリセット</button>
     <video id="video" autoplay playsinline></video>
     <canvas id="canvas"></canvas>
     <p>読み取ったQRコードの内容:</p>
     <p id="result">読み取り中...</p>
-    <p class="version">Version 1.1.0</p>
+    <p class="version">Version 1.2.0</p>
 
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const resultElement = document.getElementById('result');
+        const toggleCameraButton = document.getElementById('toggleCamera');
+        const resetResultButton = document.getElementById('resetResult');
         const ctx = canvas.getContext('2d');
+        let stream = null;
+        let scanning = false;
 
         async function startCamera() {
             try {
                 const constraints = { video: { facingMode: { ideal: "environment" } } };
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                console.log("Camera Stream:", stream); // デバッグ用
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                console.log("Camera Stream:", stream);
                 video.srcObject = stream;
                 video.play();
-                requestAnimationFrame(scanQR);
+                scanning = true;
+                scanQR();
             } catch (error) {
                 console.error('カメラのアクセスに失敗しました:', error);
                 resultElement.textContent = 'カメラを利用できません。';
             }
         }
 
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                scanning = false;
+            }
+        }
+
         function scanQR() {
+            if (!scanning) return;
             if (video.readyState === video.HAVE_ENOUGH_DATA) {
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                    inversionAttempts: 'dontInvert' // 明るさの影響を減らす
+                    inversionAttempts: 'dontInvert'
                 });
                 if (code) {
                     console.log("QRコード検出", code);
                     resultElement.textContent = `QRコードの内容: ${code.data}`;
-                    // QRコードの枠を描画
                     ctx.beginPath();
                     ctx.moveTo(code.location.topLeftCorner.x, code.location.topLeftCorner.y);
                     ctx.lineTo(code.location.topRightCorner.x, code.location.topRightCorner.y);
@@ -76,13 +97,24 @@
                     ctx.lineWidth = 4;
                     ctx.strokeStyle = "red";
                     ctx.stroke();
-                    return;
-                } else {
-                    console.log("QRコード未検出");
                 }
             }
             requestAnimationFrame(scanQR);
         }
+
+        toggleCameraButton.addEventListener('click', () => {
+            if (scanning) {
+                stopCamera();
+                toggleCameraButton.textContent = "カメラをオン";
+            } else {
+                startCamera();
+                toggleCameraButton.textContent = "カメラをオフ";
+            }
+        });
+
+        resetResultButton.addEventListener('click', () => {
+            resultElement.textContent = "読み取り中...";
+        });
 
         startCamera();
     </script>
