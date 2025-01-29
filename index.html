@@ -91,7 +91,7 @@
     <canvas id="canvas"></canvas>
     <p id="result" style="word-wrap: break-word; overflow-wrap: break-word;">読み取り中...</p>
     <div class="card-container" id="scanHistory"></div>
-    <p class="version">Version 2.1.0</p>
+    <p class="version">Version 2.2.0</p>
 
     <script>
         const video = document.getElementById('video');
@@ -108,7 +108,7 @@
 
         async function startCamera() {
             try {
-                const constraints = { video: { facingMode: { ideal: "environment" }, zoom: 3.5 } };
+                const constraints = { video: { facingMode: { ideal: "environment" } } };
                 stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
                 video.play();
@@ -130,12 +130,9 @@
             }
         }
 
-        function captureImage() {
-            return canvas.toDataURL("image/png");
-        }
-
         function scanQR() {
             if (!scanning) return;
+            requestAnimationFrame(scanQR);
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -148,14 +145,13 @@
                 resultElement.textContent = `QRコードの内容: ${code.data}`;
                 addToHistory(code.data);
             }
-            requestAnimationFrame(scanQR);
         }
 
         function addToHistory(data) {
             const timestamp = new Date().toLocaleString();
             const no = scannedResults.size;
             const qrContent = data.startsWith("http") ? `<a href="${data}" target="_blank">${data}</a>` : data;
-            const capture = captureImage();
+            const capture = canvas.toDataURL("image/png");
 
             const card = document.createElement("div");
             card.classList.add("card");
