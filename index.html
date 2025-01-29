@@ -19,6 +19,11 @@
         canvas {
             display: none;
         }
+        .version {
+            font-size: 12px;
+            color: gray;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -27,6 +32,7 @@
     <canvas id="canvas"></canvas>
     <p>読み取ったQRコードの内容:</p>
     <p id="result">読み取り中...</p>
+    <p class="version">Version 1.1.0</p>
 
     <script>
         const video = document.getElementById('video');
@@ -54,10 +60,25 @@
                 canvas.height = video.videoHeight;
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: 'dontInvert' // 明るさの影響を減らす
+                });
                 if (code) {
+                    console.log("QRコード検出", code);
                     resultElement.textContent = `QRコードの内容: ${code.data}`;
+                    // QRコードの枠を描画
+                    ctx.beginPath();
+                    ctx.moveTo(code.location.topLeftCorner.x, code.location.topLeftCorner.y);
+                    ctx.lineTo(code.location.topRightCorner.x, code.location.topRightCorner.y);
+                    ctx.lineTo(code.location.bottomRightCorner.x, code.location.bottomRightCorner.y);
+                    ctx.lineTo(code.location.bottomLeftCorner.x, code.location.bottomLeftCorner.y);
+                    ctx.closePath();
+                    ctx.lineWidth = 4;
+                    ctx.strokeStyle = "red";
+                    ctx.stroke();
                     return;
+                } else {
+                    console.log("QRコード未検出");
                 }
             }
             requestAnimationFrame(scanQR);
