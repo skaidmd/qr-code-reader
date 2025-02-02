@@ -27,26 +27,66 @@
       border-radius: 10px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
-    /* スキャナーオーバーレイ */
+    /* スキャナーオーバーレイ全体 */
     .scanner-overlay {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+    }
+    /* 上部オーバーレイ */
+    .overlay-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 35%;
+      background-color: rgba(128, 128, 128, 0.8);
+    }
+    /* 下部オーバーレイ */
+    .overlay-bottom {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 35%;
+      background-color: rgba(128, 128, 128, 0.8);
+    }
+    /* 左側オーバーレイ */
+    .overlay-left {
+      position: absolute;
+      top: 35%;
+      left: 0;
+      width: 20%;
+      height: 30%;
+      background-color: rgba(128, 128, 128, 0.8);
+    }
+    /* 右側オーバーレイ */
+    .overlay-right {
+      position: absolute;
+      top: 35%;
+      right: 0;
+      width: 20%;
+      height: 30%;
+      background-color: rgba(128, 128, 128, 0.8);
+    }
+    /* 中央スキャン領域（枠線と案内テキスト） */
+    .scanning-area {
+      position: absolute;
+      top: 35%;
+      left: 20%;
       width: 60%;
       height: 30%;
       border: 2px dashed #00ff00;
-      pointer-events: none;
+      box-sizing: border-box;
       display: flex;
       align-items: center;
       justify-content: center;
       color: #00ff00;
       font-weight: bold;
-      background-color: rgba(0, 0, 0, 0.1);
-      border-radius: 5px;
-    }
-    .overlay-text {
-      font-size: 14px;
+      background-color: transparent;
     }
     /* 読み取り成功・重複フィードバック */
     .feedback {
@@ -146,9 +186,15 @@
 
   <div class="video-container">
     <video id="video" autoplay playsinline></video>
+    <!-- オーバーレイ -->
     <div class="scanner-overlay">
-      <span class="overlay-text">ここにQRコードを合わせてください</span>
+      <div class="overlay-top"></div>
+      <div class="overlay-left"></div>
+      <div class="scanning-area">ここにQRコードを合わせてください</div>
+      <div class="overlay-right"></div>
+      <div class="overlay-bottom"></div>
     </div>
+    <!-- フィードバック -->
     <div id="feedback" class="feedback"></div>
   </div>
 
@@ -161,17 +207,12 @@
   <script>
     // 定数
     const FEEDBACK_DURATION = 1500;
+    const FEEDBACK_SUPPRESSION_TIME = 3000; // 同一コードの再フィードバックを抑制する時間（ms）
 
     // --- Utility: シンプルなサニタイズ処理 ---
     function sanitizeHTML(str) {
       return str.replace(/[&<>"']/g, match => {
-        const escape = {
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          '"': '&quot;',
-          "'": '&#39;'
-        };
+        const escape = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
         return escape[match];
       });
     }
@@ -190,6 +231,7 @@
     let stream = null;
     let scanning = false;
     let scannedResults = new Set();
+    let lastFeedbackTimes = {}; // 各QRコードの最終フィードバック時刻
 
     // --- カメラ制御 ---
     async function startCamera() {
@@ -198,7 +240,14 @@
         return;
       }
       try {
-        const constraints = { video: { facingMode: { ideal: "environment" } } };
+        // 解像度を高めに指定（小さいQRコード検出向上のため）
+        const constraints = {
+          video: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        };
         stream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = stream;
         video.play();
@@ -207,7 +256,7 @@
         toggleCameraButton.textContent = "📴 カメラ オフ";
       } catch (error) {
         console.error('カメラのアクセスに失敗しました:', error);
-        resultElement.textContent = 'カメラのアクセスに失敗しました。パーミッションの確認やブラウザの対応状況をご確認ください。';
+        resultElement.textContent = 'カメラのアクセスに失敗しました。パーミッションやブラウザの対応状況をご確認ください。';
       }
     }
 
@@ -236,6 +285,7 @@
 
       if (video.videoWidth === 0 || video.videoHeight === 0) return;
 
+      // キャンバスに動画全体を描画
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       try {
@@ -244,22 +294,33 @@
         console.error('キャンバス描画エラー:', err);
         return;
       }
+      // スキャン領域：左20%、上35%、幅60%、高さ30%（オーバーレイと連動）
+      const cropX = Math.floor(video.videoWidth * 0.2);
+      const cropY = Math.floor(video.videoHeight * 0.35);
+      const cropWidth = Math.floor(video.videoWidth * 0.6);
+      const cropHeight = Math.floor(video.videoHeight * 0.3);
       let imageData;
       try {
-        imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        imageData = ctx.getImageData(cropX, cropY, cropWidth, cropHeight);
       } catch (err) {
         console.error('ImageData取得エラー:', err);
         return;
       }
       const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
       if (code) {
+        const now = Date.now();
         if (!scannedResults.has(code.data)) {
           scannedResults.add(code.data);
           resultElement.textContent = `QRコードの内容: ${code.data}`;
           addToHistory(code.data);
           showFeedback("QRコード検出！");
+          lastFeedbackTimes[code.data] = now;
         } else {
-          showFeedback("重複したQRコードが読み込まれました");
+          // 重複検出の場合、一定時間以上経過していればフィードバック表示
+          if (!lastFeedbackTimes[code.data] || now - lastFeedbackTimes[code.data] > FEEDBACK_SUPPRESSION_TIME) {
+            showFeedback("重複したQRコードが読み込まれました");
+            lastFeedbackTimes[code.data] = now;
+          }
         }
       }
     }
@@ -329,12 +390,8 @@
     function copyText(text) {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text)
-          .then(() => {
-            alert("コピーしました: " + text);
-          })
-          .catch(err => {
-            console.error("コピーに失敗しました:", err);
-          });
+          .then(() => { alert("コピーしました: " + text); })
+          .catch(err => { console.error("コピーに失敗しました:", err); });
       } else {
         const tempInput = document.createElement("input");
         document.body.appendChild(tempInput);
