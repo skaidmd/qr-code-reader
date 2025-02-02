@@ -13,12 +13,13 @@
       margin: 0;
       padding: 20px;
     }
-    /* 動画エリアを囲むコンテナ */
+    /* 動画エリアコンテナ */
     .video-container {
       position: relative;
       display: inline-block;
       max-width: 400px;
       width: 100%;
+      margin-bottom: 15px;
     }
     video {
       width: 100%;
@@ -26,7 +27,7 @@
       border-radius: 10px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
-    /* QRコードを収める位置を示すオーバーレイ */
+    /* スキャナーオーバーレイ */
     .scanner-overlay {
       position: absolute;
       top: 50%;
@@ -36,8 +37,18 @@
       height: 30%;
       border: 2px dashed #00ff00;
       pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #00ff00;
+      font-weight: bold;
+      background-color: rgba(0, 0, 0, 0.1);
+      border-radius: 5px;
     }
-    /* 読み取り成功時のフィードバックメッセージ */
+    .overlay-text {
+      font-size: 14px;
+    }
+    /* 読み取り成功・重複フィードバック */
     .feedback {
       position: absolute;
       top: 10px;
@@ -50,17 +61,21 @@
       opacity: 0;
       transition: opacity 0.5s;
       pointer-events: none;
+      font-size: 14px;
     }
     .feedback.show {
       opacity: 1;
     }
-    /* 読み取り結果の表示部分のスタイル調整 */
+    /* 結果表示 */
     #result {
       background-color: #fff;
       padding: 10px;
       border-radius: 5px;
       margin-top: 15px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
     }
     .controls {
       display: flex;
@@ -129,21 +144,27 @@
     <button id="resetResult">🔄 結果をリセット</button>
   </div>
 
-  <!-- 動画エリアとオーバーレイ、フィードバックメッセージ -->
   <div class="video-container">
     <video id="video" autoplay playsinline></video>
-    <div class="scanner-overlay"></div>
-    <div id="feedback" class="feedback">QRコード検出！</div>
+    <div class="scanner-overlay">
+      <span class="overlay-text">ここにQRコードを合わせてください</span>
+    </div>
+    <div id="feedback" class="feedback"></div>
   </div>
 
   <p id="result">読み取り中...</p>
   <div class="card-container" id="scanHistory"></div>
   <p class="version">Version 2.2.0</p>
 
+  <canvas id="canvas" style="display:none;"></canvas>
+
   <script>
+    // 定数
+    const FEEDBACK_DURATION = 1500;
+
     // --- Utility: シンプルなサニタイズ処理 ---
     function sanitizeHTML(str) {
-      return str.replace(/[&<>"']/g, function(match) {
+      return str.replace(/[&<>"']/g, match => {
         const escape = {
           '&': '&amp;',
           '<': '&lt;',
@@ -155,17 +176,17 @@
       });
     }
 
-    // --- 要素・グローバル変数 ---
+    // --- 要素取得とグローバル変数 ---
     const video = document.getElementById('video');
-    // canvasが存在しない場合は動的に作成
-    const canvas = document.getElementById('canvas') || document.createElement('canvas');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
     const resultElement = document.getElementById('result');
     const toggleCameraButton = document.getElementById('toggleCamera');
     const resetResultButton = document.getElementById('resetResult');
     const scanHistoryContainer = document.getElementById('scanHistory');
     const scanCountElement = document.getElementById('scanCount');
     const feedbackElement = document.getElementById('feedback');
-    const ctx = canvas.getContext('2d');
+
     let stream = null;
     let scanning = false;
     let scannedResults = new Set();
@@ -205,7 +226,7 @@
       feedbackElement.classList.add('show');
       setTimeout(() => {
         feedbackElement.classList.remove('show');
-      }, 1500);
+      }, FEEDBACK_DURATION);
     }
 
     // --- QRコードスキャン ---
@@ -231,11 +252,15 @@
         return;
       }
       const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
-      if (code && !scannedResults.has(code.data)) {
-        scannedResults.add(code.data);
-        resultElement.textContent = `QRコードの内容: ${code.data}`;
-        addToHistory(code.data);
-        showFeedback("QRコード検出！");
+      if (code) {
+        if (!scannedResults.has(code.data)) {
+          scannedResults.add(code.data);
+          resultElement.textContent = `QRコードの内容: ${code.data}`;
+          addToHistory(code.data);
+          showFeedback("QRコード検出！");
+        } else {
+          showFeedback("重複したQRコードが読み込まれました");
+        }
       }
     }
 
