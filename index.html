@@ -23,56 +23,47 @@
     }
     video {
       width: 100%;
-      height: auto;
+      max-height: 300px; /* 高さを抑制 */
       border-radius: 10px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      object-fit: cover;
     }
-    /* スキャナーオーバーレイ全体 */
+    /* オーバーレイ全体（中央は透明、周囲はグレー） */
     .scanner-overlay {
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      top: 0; left: 0; right: 0; bottom: 0;
       pointer-events: none;
     }
-    /* 上部オーバーレイ */
+    .overlay-top,
+    .overlay-bottom,
+    .overlay-left,
+    .overlay-right {
+      background-color: rgba(128, 128, 128, 0.8);
+    }
     .overlay-top {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
+      top: 0; left: 0; right: 0;
       height: 35%;
-      background-color: rgba(128, 128, 128, 0.8);
     }
-    /* 下部オーバーレイ */
     .overlay-bottom {
       position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
+      bottom: 0; left: 0; right: 0;
       height: 35%;
-      background-color: rgba(128, 128, 128, 0.8);
     }
-    /* 左側オーバーレイ */
     .overlay-left {
       position: absolute;
       top: 35%;
       left: 0;
       width: 20%;
       height: 30%;
-      background-color: rgba(128, 128, 128, 0.8);
     }
-    /* 右側オーバーレイ */
     .overlay-right {
       position: absolute;
       top: 35%;
       right: 0;
       width: 20%;
       height: 30%;
-      background-color: rgba(128, 128, 128, 0.8);
     }
-    /* 中央スキャン領域（枠線と案内テキスト） */
     .scanning-area {
       position: absolute;
       top: 35%;
@@ -88,7 +79,7 @@
       font-weight: bold;
       background-color: transparent;
     }
-    /* 読み取り成功・重複フィードバック */
+    /* フィードバック表示 */
     .feedback {
       position: absolute;
       top: 10px;
@@ -114,8 +105,7 @@
       margin-top: 15px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       max-width: 400px;
-      margin-left: auto;
-      margin-right: auto;
+      margin: auto;
     }
     .controls {
       display: flex;
@@ -165,7 +155,7 @@
       overflow-wrap: break-word;
     }
     .capture-image {
-      width: 100%;
+      width: 80%; /* キャプチャ画像の表示サイズを縮小 */
       border-radius: 5px;
       margin-top: 10px;
     }
@@ -186,7 +176,6 @@
 
   <div class="video-container">
     <video id="video" autoplay playsinline></video>
-    <!-- オーバーレイ -->
     <div class="scanner-overlay">
       <div class="overlay-top"></div>
       <div class="overlay-left"></div>
@@ -194,7 +183,6 @@
       <div class="overlay-right"></div>
       <div class="overlay-bottom"></div>
     </div>
-    <!-- フィードバック -->
     <div id="feedback" class="feedback"></div>
   </div>
 
@@ -207,7 +195,7 @@
   <script>
     // 定数
     const FEEDBACK_DURATION = 1500;
-    const FEEDBACK_SUPPRESSION_TIME = 3000; // 同一コードの再フィードバックを抑制する時間（ms）
+    const FEEDBACK_SUPPRESSION_TIME = 3000; // ms
 
     // --- Utility: シンプルなサニタイズ処理 ---
     function sanitizeHTML(str) {
@@ -231,7 +219,29 @@
     let stream = null;
     let scanning = false;
     let scannedResults = new Set();
-    let lastFeedbackTimes = {}; // 各QRコードの最終フィードバック時刻
+    let lastFeedbackTimes = {};
+
+    // --- スキャン領域の寸法を計算（動画の20%左、35%上、60%幅、30%高さ） ---
+    function getScanAreaDimensions() {
+      return {
+        x: Math.floor(video.videoWidth * 0.2),
+        y: Math.floor(video.videoHeight * 0.35),
+        width: Math.floor(video.videoWidth * 0.6),
+        height: Math.floor(video.videoHeight * 0.3)
+      };
+    }
+
+    // --- キャプチャ画像をスキャン領域から縮小して取得 ---
+    function getSnapshot() {
+      const { x, y, width, height } = getScanAreaDimensions();
+      const snapshotCanvas = document.createElement("canvas");
+      // スキャン領域の50%サイズに縮小
+      snapshotCanvas.width = Math.floor(width / 2);
+      snapshotCanvas.height = Math.floor(height / 2);
+      const snapshotCtx = snapshotCanvas.getContext("2d");
+      snapshotCtx.drawImage(video, x, y, width, height, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
+      return snapshotCanvas.toDataURL("image/png");
+    }
 
     // --- カメラ制御 ---
     async function startCamera() {
@@ -240,7 +250,7 @@
         return;
       }
       try {
-        // 解像度を高めに指定（小さいQRコード検出向上のため）
+        // 小さいQRコード検出向上のため高解像度指定
         const constraints = {
           video: {
             facingMode: { ideal: "environment" },
@@ -285,7 +295,6 @@
 
       if (video.videoWidth === 0 || video.videoHeight === 0) return;
 
-      // キャンバスに動画全体を描画
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       try {
@@ -294,14 +303,10 @@
         console.error('キャンバス描画エラー:', err);
         return;
       }
-      // スキャン領域：左20%、上35%、幅60%、高さ30%（オーバーレイと連動）
-      const cropX = Math.floor(video.videoWidth * 0.2);
-      const cropY = Math.floor(video.videoHeight * 0.35);
-      const cropWidth = Math.floor(video.videoWidth * 0.6);
-      const cropHeight = Math.floor(video.videoHeight * 0.3);
+      const { x, y, width, height } = getScanAreaDimensions();
       let imageData;
       try {
-        imageData = ctx.getImageData(cropX, cropY, cropWidth, cropHeight);
+        imageData = ctx.getImageData(x, y, width, height);
       } catch (err) {
         console.error('ImageData取得エラー:', err);
         return;
@@ -316,7 +321,6 @@
           showFeedback("QRコード検出！");
           lastFeedbackTimes[code.data] = now;
         } else {
-          // 重複検出の場合、一定時間以上経過していればフィードバック表示
           if (!lastFeedbackTimes[code.data] || now - lastFeedbackTimes[code.data] > FEEDBACK_SUPPRESSION_TIME) {
             showFeedback("重複したQRコードが読み込まれました");
             lastFeedbackTimes[code.data] = now;
@@ -356,7 +360,7 @@
 
       const captureImage = document.createElement("img");
       captureImage.classList.add("capture-image");
-      captureImage.src = canvas.toDataURL("image/png");
+      captureImage.src = getSnapshot();
       captureImage.alt = "QRコードキャプチャ";
       card.appendChild(captureImage);
 
