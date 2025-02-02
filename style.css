@@ -73,7 +73,6 @@ body {
     height: 30%;
     border: 2px dashed #fff; /* 枠線を白色に変更 */
     box-sizing: border-box;
-    /* 枠線の色が白なので、テキストや背景は必要なく、背景は透明 */
     background-color: transparent;
   }
   
@@ -160,6 +159,7 @@ body {
   .qr-content {
     word-wrap: break-word;
     overflow-wrap: break-word;
+    white-space: pre-wrap; /* 長いテキストの折り返しを強制 */
   }
   
   .capture-image {

@@ -121,7 +121,8 @@ function scanQR() {
     const now = Date.now();
     if (!scannedResults.has(code.data)) {
       scannedResults.add(code.data);
-      resultElement.textContent = `QRコードの内容: ${code.data}`;
+      // 結果表示ラベルを「直近の読み取り内容:」に変更
+      resultElement.textContent = `直近の読み取り内容: ${code.data}`;
       addToHistory(code.data);
       showFeedback("QRコード検出！");
       lastFeedbackTimes[code.data] = now;
@@ -172,7 +173,8 @@ function addToHistory(data) {
   const qrContentP = document.createElement("p");
   qrContentP.classList.add("qr-content");
   const strongLabel = document.createElement("strong");
-  strongLabel.textContent = "QRコード: ";
+  // 結果カードのラベルも「直近の読み取り内容:」に変更
+  strongLabel.textContent = "直近の読み取り内容: ";
   qrContentP.appendChild(strongLabel);
   qrContentP.appendChild(qrContentElement);
 
@@ -238,5 +240,22 @@ scanHistoryContainer.addEventListener('click', (event) => {
   }
 });
 
-// ページ読み込み時にカメラ開始
-startCamera();
+// --- LIFF 初期化とアプリ起動 ---
+function initApp() {
+  if (window.liff) {
+    const LIFF_ID = 'YOUR_LIFF_ID'; // 必ず実際のLIFF IDに置き換えてください
+    liff.init({ liffId: LIFF_ID })
+      .then(() => {
+        startCamera();
+      })
+      .catch((err) => {
+        console.error('LIFF init failed:', err);
+        startCamera();
+      });
+  } else {
+    // LIFF SDKが利用できない環境の場合、通常のWebアプリとして動作
+    startCamera();
+  }
+}
+
+window.addEventListener('load', initApp);
