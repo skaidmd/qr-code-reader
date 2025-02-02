@@ -71,13 +71,9 @@ body {
     left: 20%;
     width: 60%;
     height: 30%;
-    border: 2px dashed #00ff00;
+    border: 2px dashed #fff; /* 枠線を白色に変更 */
     box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #00ff00;
-    font-weight: bold;
+    /* 枠線の色が白なので、テキストや背景は必要なく、背景は透明 */
     background-color: transparent;
   }
   

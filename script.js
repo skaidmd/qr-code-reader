@@ -1,6 +1,8 @@
 // 定数
 const FEEDBACK_DURATION = 1500;
 const FEEDBACK_SUPPRESSION_TIME = 3000; // ms
+const SCAN_AREA = { left: 0.2, top: 0.35, width: 0.6, height: 0.3 };
+const SNAPSHOT_SCALE = 0.5;
 
 // --- Utility: シンプルなサニタイズ処理 ---
 function sanitizeHTML(str) {
@@ -26,13 +28,13 @@ let scanning = false;
 let scannedResults = new Set();
 let lastFeedbackTimes = {};
 
-// --- スキャン領域の寸法を計算（動画の20%左、35%上、60%幅、30%高さ） ---
+// --- スキャン領域の寸法を計算 ---
 function getScanAreaDimensions() {
   return {
-    x: Math.floor(video.videoWidth * 0.2),
-    y: Math.floor(video.videoHeight * 0.35),
-    width: Math.floor(video.videoWidth * 0.6),
-    height: Math.floor(video.videoHeight * 0.3)
+    x: Math.floor(video.videoWidth * SCAN_AREA.left),
+    y: Math.floor(video.videoHeight * SCAN_AREA.top),
+    width: Math.floor(video.videoWidth * SCAN_AREA.width),
+    height: Math.floor(video.videoHeight * SCAN_AREA.height)
   };
 }
 
@@ -40,9 +42,8 @@ function getScanAreaDimensions() {
 function getSnapshot() {
   const { x, y, width, height } = getScanAreaDimensions();
   const snapshotCanvas = document.createElement("canvas");
-  // スキャン領域の50%サイズに縮小
-  snapshotCanvas.width = Math.floor(width / 2);
-  snapshotCanvas.height = Math.floor(height / 2);
+  snapshotCanvas.width = Math.floor(width * SNAPSHOT_SCALE);
+  snapshotCanvas.height = Math.floor(height * SNAPSHOT_SCALE);
   const snapshotCtx = snapshotCanvas.getContext("2d");
   snapshotCtx.drawImage(video, x, y, width, height, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
   return snapshotCanvas.toDataURL("image/png");
@@ -55,7 +56,6 @@ async function startCamera() {
     return;
   }
   try {
-    // 小さいQRコード検出向上のため高解像度指定
     const constraints = { 
       video: { 
         facingMode: { ideal: "environment" },
