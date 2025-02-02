@@ -1,193 +1,309 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QRコードリーダー</title>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f4f4f9;
-            margin: 0;
-            padding: 20px;
-        }
-        video {
-            width: 100%;
-            max-width: 400px;
-            height: auto;
-            margin: 20px auto;
-            display: block;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        canvas {
-            display: none;
-        }
-        .version {
-            font-size: 12px;
-            color: gray;
-            margin-top: 10px;
-        }
-        .controls {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .card-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 20px;
-        }
-        .card {
-            width: 320px;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            padding: 15px;
-            text-align: left;
-            background-color: #fff;
-            position: relative;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        .delete-icon {
-            cursor: pointer;
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 18px;
-            color: red;
-        }
-        .copy-icon {
-            cursor: pointer;
-            margin-left: 5px;
-            color: #4CAF50;
-        }
-        .qr-content {
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-        .capture-image {
-            width: 100%;
-            border-radius: 5px;
-            margin-top: 10px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QRコードリーダー</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 20px;
+    }
+    video {
+      width: 100%;
+      max-width: 400px;
+      height: auto;
+      margin: 20px auto;
+      display: block;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    canvas {
+      display: none;
+    }
+    .version {
+      font-size: 12px;
+      color: gray;
+      margin-top: 10px;
+    }
+    .controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .card-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .card {
+      width: 320px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 15px;
+      text-align: left;
+      background-color: #fff;
+      position: relative;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .delete-icon,
+    .copy-icon {
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-size: 18px;
+    }
+    .delete-icon {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      color: red;
+    }
+    .copy-icon {
+      margin-left: 5px;
+      color: #4CAF50;
+    }
+    .qr-content {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+    .capture-image {
+      width: 100%;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
-    <h1>QRコードリーダー</h1>
-    <div class="controls">
-        <button id="toggleCamera">📷 カメラ オン</button>
-        <p>読み取り件数: <span id="scanCount">0</span> 件</p>
-        <button id="resetResult">🔄 結果をリセット</button>
-    </div>
-    <video id="video" autoplay playsinline></video>
-    <canvas id="canvas"></canvas>
-    <p id="result" style="word-wrap: break-word; overflow-wrap: break-word;">読み取り中...</p>
-    <div class="card-container" id="scanHistory"></div>
-    <p class="version">Version 2.2.0</p>
+  <h1>QRコードリーダー</h1>
+  <div class="controls">
+    <button id="toggleCamera">📷 カメラ オン</button>
+    <p>読み取り件数: <span id="scanCount">0</span> 件</p>
+    <button id="resetResult">🔄 結果をリセット</button>
+  </div>
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas"></canvas>
+  <p id="result" style="word-wrap: break-word; overflow-wrap: break-word;">読み取り中...</p>
+  <div class="card-container" id="scanHistory"></div>
+  <p class="version">Version 2.2.0</p>
 
-    <script>
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const resultElement = document.getElementById('result');
-        const toggleCameraButton = document.getElementById('toggleCamera');
-        const resetResultButton = document.getElementById('resetResult');
-        const scanHistoryContainer = document.getElementById('scanHistory');
-        const scanCountElement = document.getElementById('scanCount');
-        const ctx = canvas.getContext('2d');
-        let stream = null;
-        let scanning = false;
-        let scannedResults = new Set();
+  <script>
+    // --- Utility: シンプルなサニタイズ処理 ---
+    function sanitizeHTML(str) {
+      return str.replace(/[&<>"']/g, function(match) {
+        const escape = {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        };
+        return escape[match];
+      });
+    }
 
-        async function startCamera() {
-            try {
-                const constraints = { video: { facingMode: { ideal: "environment" } } };
-                stream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = stream;
-                video.play();
-                scanning = true;
-                scanQR();
-                toggleCameraButton.textContent = "📴 カメラ オフ";
-            } catch (error) {
-                console.error('カメラのアクセスに失敗しました:', error);
-                resultElement.textContent = 'カメラを利用できません。';
-            }
+    // --- 要素・グローバル変数 ---
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const resultElement = document.getElementById('result');
+    const toggleCameraButton = document.getElementById('toggleCamera');
+    const resetResultButton = document.getElementById('resetResult');
+    const scanHistoryContainer = document.getElementById('scanHistory');
+    const scanCountElement = document.getElementById('scanCount');
+    const ctx = canvas.getContext('2d');
+    let stream = null;
+    let scanning = false;
+    let scannedResults = new Set();
+
+    // --- カメラ制御 ---
+    async function startCamera() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        resultElement.textContent = 'お使いのブラウザはカメラ機能に対応していません。';
+        return;
+      }
+      try {
+        const constraints = { video: { facingMode: { ideal: "environment" } } };
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = stream;
+        video.play();
+        scanning = true;
+        scanQR();
+        toggleCameraButton.textContent = "📴 カメラ オフ";
+      } catch (error) {
+        console.error('カメラのアクセスに失敗しました:', error);
+        resultElement.textContent = 'カメラのアクセスに失敗しました。パーミッションの確認やブラウザの対応状況をご確認ください。';
+      }
+    }
+
+    function stopCamera() {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+        scanning = false;
+        toggleCameraButton.textContent = "📷 カメラ オン";
+      }
+    }
+
+    // --- QRコードスキャン ---
+    function scanQR() {
+      if (!scanning) return;
+      requestAnimationFrame(scanQR);
+
+      // ビデオのサイズが取得できていない場合はスキップ
+      if (video.videoWidth === 0 || video.videoHeight === 0) return;
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      try {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      } catch (err) {
+        console.error('キャンバス描画エラー:', err);
+        return;
+      }
+      let imageData;
+      try {
+        imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      } catch (err) {
+        console.error('ImageData取得エラー:', err);
+        return;
+      }
+      const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
+      if (code && !scannedResults.has(code.data)) {
+        scannedResults.add(code.data);
+        resultElement.textContent = `QRコードの内容: ${code.data}`;
+        addToHistory(code.data);
+      }
+    }
+
+    // --- 履歴管理 ---
+    function addToHistory(data) {
+      const timestamp = new Date().toLocaleString();
+      const no = scannedResults.size;
+      const safeData = sanitizeHTML(data);
+      let qrContentElement;
+      if (data.startsWith("http")) {
+        qrContentElement = document.createElement('a');
+        qrContentElement.href = data;
+        qrContentElement.target = '_blank';
+        qrContentElement.textContent = safeData;
+      } else {
+        qrContentElement = document.createElement('span');
+        qrContentElement.textContent = safeData;
+      }
+
+      // カード要素作成
+      const card = document.createElement("div");
+      card.classList.add("card");
+
+      // 削除ボタン
+      const deleteButton = document.createElement("button");
+      deleteButton.classList.add("delete-icon");
+      deleteButton.setAttribute("aria-label", "この項目を削除");
+      deleteButton.textContent = "❌";
+      card.appendChild(deleteButton);
+
+      // 番号情報
+      const noP = document.createElement("p");
+      noP.innerHTML = `<strong>No:</strong> ${no}`;
+      card.appendChild(noP);
+
+      // キャプチャ画像
+      const captureImage = document.createElement("img");
+      captureImage.classList.add("capture-image");
+      captureImage.src = canvas.toDataURL("image/png");
+      captureImage.alt = "QRコードキャプチャ";
+      card.appendChild(captureImage);
+
+      // QRコード内容
+      const qrContentP = document.createElement("p");
+      qrContentP.classList.add("qr-content");
+      const strongLabel = document.createElement("strong");
+      strongLabel.textContent = "QRコード: ";
+      qrContentP.appendChild(strongLabel);
+      qrContentP.appendChild(qrContentElement);
+
+      // コピーボタン
+      const copyButton = document.createElement("button");
+      copyButton.classList.add("copy-icon");
+      copyButton.setAttribute("aria-label", "QRコードの内容をコピー");
+      copyButton.textContent = "📋";
+      copyButton.dataset.text = data;
+      qrContentP.appendChild(copyButton);
+      card.appendChild(qrContentP);
+
+      // 読み取り日時
+      const timeP = document.createElement("p");
+      timeP.innerHTML = `<strong>読み取り日時:</strong> ${timestamp}`;
+      card.appendChild(timeP);
+
+      scanHistoryContainer.appendChild(card);
+      updateCount();
+    }
+
+    function updateCount() {
+      scanCountElement.textContent = document.querySelectorAll('.card').length;
+    }
+
+    function copyText(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+          .then(() => {
+            alert("コピーしました: " + text);
+          })
+          .catch(err => {
+            console.error("コピーに失敗しました:", err);
+          });
+      } else {
+        // フォールバック処理（旧来のdocument.execCommand）
+        const tempInput = document.createElement("input");
+        document.body.appendChild(tempInput);
+        tempInput.value = text;
+        tempInput.select();
+        try {
+          document.execCommand("copy");
+          alert("コピーしました: " + text);
+        } catch (err) {
+          console.error("コピーに失敗しました:", err);
         }
+        document.body.removeChild(tempInput);
+      }
+    }
 
-        function stopCamera() {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                video.srcObject = null;
-                scanning = false;
-                toggleCameraButton.textContent = "📷 カメラ オン";
-            }
-        }
+    // --- イベントリスナー ---
+    toggleCameraButton.addEventListener('click', () => {
+      scanning ? stopCamera() : startCamera();
+    });
 
-        function scanQR() {
-            if (!scanning) return;
-            requestAnimationFrame(scanQR);
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                inversionAttempts: 'attemptBoth'
-            });
-            if (code && !scannedResults.has(code.data)) {
-                scannedResults.add(code.data);
-                resultElement.textContent = `QRコードの内容: ${code.data}`;
-                addToHistory(code.data);
-            }
-        }
+    resetResultButton.addEventListener('click', () => {
+      resultElement.textContent = "読み取り中...";
+      scanHistoryContainer.innerHTML = "";
+      scannedResults.clear();
+      updateCount();
+    });
 
-        function addToHistory(data) {
-            const timestamp = new Date().toLocaleString();
-            const no = scannedResults.size;
-            const qrContent = data.startsWith("http") ? `<a href="${data}" target="_blank">${data}</a>` : data;
-            const capture = canvas.toDataURL("image/png");
+    // 履歴領域のイベント委譲（削除・コピーボタン）
+    scanHistoryContainer.addEventListener('click', (event) => {
+      if (event.target.classList.contains('delete-icon')) {
+        event.target.parentElement.remove();
+        updateCount();
+      } else if (event.target.classList.contains('copy-icon')) {
+        const textToCopy = event.target.dataset.text;
+        copyText(textToCopy);
+      }
+    });
 
-            const card = document.createElement("div");
-            card.classList.add("card");
-            card.innerHTML = `
-                <span class="delete-icon" onclick="this.parentElement.remove(); updateCount()">❌</span>
-                <p><strong>No:</strong> ${no}</p>
-                <img class="capture-image" src="${capture}" alt="QRコードキャプチャ">
-                <p class="qr-content"><strong>QRコード:</strong> ${qrContent} <span class="copy-icon" onclick="copyText('${data}')">📋</span></p>
-                <p><strong>読み取り日時:</strong> ${timestamp}</p>
-            `;
-            scanHistoryContainer.appendChild(card);
-            updateCount();
-        }
-
-        function updateCount() {
-            scanCountElement.textContent = document.querySelectorAll('.card').length;
-        }
-
-        function copyText(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                alert("コピーしました: " + text);
-            });
-        }
-
-        toggleCameraButton.addEventListener('click', () => {
-            scanning ? stopCamera() : startCamera();
-        });
-
-        resetResultButton.addEventListener('click', () => {
-            resultElement.textContent = "読み取り中...";
-            scanHistoryContainer.innerHTML = "";
-            scannedResults.clear();
-            updateCount();
-        });
-
-        startCamera();
-    </script>
+    // ページ読み込み時にカメラ開始
+    startCamera();
+  </script>
 </body>
 </html>
