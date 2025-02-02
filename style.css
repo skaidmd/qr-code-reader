@@ -1,0 +1,180 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #f4f4f9;
+    margin: 0;
+    padding: 20px;
+  }
+  
+  /* 動画エリアコンテナ */
+  .video-container {
+    position: relative;
+    display: inline-block;
+    max-width: 400px;
+    width: 100%;
+    margin-bottom: 15px;
+  }
+  
+  video {
+    width: 100%;
+    max-height: 300px; /* 高さを抑制 */
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    object-fit: cover;
+  }
+  
+  /* オーバーレイ全体（中央は透明、周囲はグレー） */
+  .scanner-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+  }
+  
+  .overlay-top,
+  .overlay-bottom,
+  .overlay-left,
+  .overlay-right {
+    background-color: rgba(128, 128, 128, 0.8);
+  }
+  
+  .overlay-top {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 35%;
+  }
+  
+  .overlay-bottom {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 35%;
+  }
+  
+  .overlay-left {
+    position: absolute;
+    top: 35%;
+    left: 0;
+    width: 20%;
+    height: 30%;
+  }
+  
+  .overlay-right {
+    position: absolute;
+    top: 35%;
+    right: 0;
+    width: 20%;
+    height: 30%;
+  }
+  
+  .scanning-area {
+    position: absolute;
+    top: 35%;
+    left: 20%;
+    width: 60%;
+    height: 30%;
+    border: 2px dashed #00ff00;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #00ff00;
+    font-weight: bold;
+    background-color: transparent;
+  }
+  
+  /* フィードバック表示 */
+  .feedback {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 5px;
+    opacity: 0;
+    transition: opacity 0.5s;
+    pointer-events: none;
+    font-size: 14px;
+  }
+  
+  .feedback.show {
+    opacity: 1;
+  }
+  
+  /* 結果表示 */
+  #result {
+    background-color: #fff;
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    max-width: 400px;
+    margin: auto;
+  }
+  
+  .controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .card-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+  }
+  
+  .card {
+    width: 320px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: left;
+    background-color: #fff;
+    position: relative;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .delete-icon,
+  .copy-icon {
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-size: 18px;
+  }
+  
+  .delete-icon {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: red;
+  }
+  
+  .copy-icon {
+    margin-left: 5px;
+    color: #4CAF50;
+  }
+  
+  .qr-content {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  .capture-image {
+    width: 80%; /* キャプチャ画像の表示サイズを縮小 */
+    border-radius: 5px;
+    margin-top: 10px;
+  }
+  
+  .version {
+    font-size: 12px;
+    color: gray;
+    margin-top: 10px;
+  }
+  
