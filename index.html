@@ -3,28 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QRコードリーダー Top</title>
+  <title>QRコードリーダー</title>
   <link rel="stylesheet" href="style.css">
+  <!-- jsQR と LIFF SDK の読み込み -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
-  <header>
-    <nav>
-      <ul>
-        <li><a href="scratch.html">Scratch QR (既存機能)</a></li>
-        <li><a href="scan.html">Scan QR (LIFF scanCode専用)</a></li>
-      </ul>
-    </nav>
-  </header>
-  <main>
-    <h1>QRコードリーダー</h1>
-    <p>以下のリンクからお好みの機能を選択してください。</p>
-    <ul>
-      <li><a href="scratch.html">Scratch QR (既存機能)</a></li>
-      <li><a href="scan.html">Scan QR (LIFF scanCode専用)</a></li>
-    </ul>
-  </main>
+  <!-- ヘッダーは不要とする -->
+  
+  <!-- メインコンテンツ：2つのビュー -->
+  <div id="scratchView" class="view">
+    <h1>Scratch QR (LIFF SDK 未使用)</h1>
+    <div class="controls">
+      <button id="toggleCamera">📷 カメラ オン</button>
+      <p>読み取り件数: <span id="scratchScanCount">0</span> 件</p>
+      <button id="resetScratch">🔄 結果をリセット</button>
+    </div>
+    <div class="video-container">
+      <video id="video" autoplay playsinline></video>
+      <div class="scanner-overlay">
+        <div class="overlay-top"></div>
+        <div class="overlay-left"></div>
+        <div class="scanning-area"></div>
+        <div class="overlay-right"></div>
+        <div class="overlay-bottom"></div>
+      </div>
+      <div id="scratchFeedback" class="feedback"></div>
+    </div>
+    <p id="scratchResult">読み取り中...</p>
+    <div class="card-container" id="scratchHistory"></div>
+  </div>
+
+  <div id="scanView" class="view" style="display:none;">
+    <h1>Scan QR (LIFF SDK 使用)</h1>
+    <div class="controls">
+      <!-- 初期状態：スキャンボタンは無効 -->
+      <button id="scanButton" disabled>QRコードをスキャン</button>
+    </div>
+    <p id="scanResult">読み取り中...</p>
+    <div class="card-container" id="scanHistory"></div>
+  </div>
+
   <footer>
-    <p class="version">Version 2.2.0</p>
+    <!-- バージョン番号はコミット毎に更新 -->
+    <p class="version">Version X.X.0</p>
   </footer>
+
+  <canvas id="canvas" style="display:none;"></canvas>
+  <script src="script.js"></script>
 </body>
 </html>
