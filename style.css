@@ -6,9 +6,20 @@ body {
     padding: 20px;
   }
   
-  /* 各ビューの基本設定 */
+  /* ナビゲーション */
+  #nav {
+    margin-bottom: 20px;
+  }
+  #nav a {
+    text-decoration: none;
+    color: #007aff;
+    font-weight: bold;
+    margin: 0 10px;
+  }
+  
+  /* 各ビュー */
   .view {
-    /* ここでは必要な場合に表示・非表示を切り替えます */
+    /* 各ビューの表示・非表示はscript.jsで切り替え */
   }
   
   /* 動画エリアコンテナ */
@@ -22,9 +33,9 @@ body {
   
   video {
     width: 100%;
-    max-height: 300px;
+    max-height: 300px; /* 高さを抑制 */
     border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     object-fit: cover;
   }
   
@@ -39,7 +50,7 @@ body {
   .overlay-bottom,
   .overlay-left,
   .overlay-right {
-    background-color: rgba(128,128,128,0.8);
+    background-color: rgba(128, 128, 128, 0.8);
   }
   
   .overlay-top {
@@ -76,18 +87,18 @@ body {
     left: 20%;
     width: 60%;
     height: 30%;
-    border: 2px dashed #fff;  /* 白色の枠線 */
+    border: 2px dashed #fff; /* 枠線を白色に変更 */
     box-sizing: border-box;
     background-color: transparent;
   }
   
-  /* フィードバック表示 */
+  /* フィードバック */
   .feedback {
     position: absolute;
     top: 10px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0,0,0,0.7);
+    background: rgba(0, 0, 0, 0.7);
     color: #fff;
     padding: 8px 16px;
     border-radius: 5px;
@@ -108,12 +119,12 @@ body {
     padding: 10px;
     border-radius: 5px;
     margin-top: 15px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     max-width: 400px;
     margin: auto;
   }
   
-  /* コントロール部 */
+  /* コントロール */
   .controls {
     display: flex;
     justify-content: center;
@@ -140,7 +151,7 @@ body {
     position: relative;
     word-wrap: break-word;
     overflow-wrap: break-word;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   }
   
   .delete-icon,
@@ -166,11 +177,11 @@ body {
   .qr-content {
     word-wrap: break-word;
     overflow-wrap: break-word;
-    white-space: pre-wrap;
+    white-space: pre-wrap; /* 折り返し対応 */
   }
   
   .capture-image {
-    width: 80%;
+    width: 80%; /* キャプチャ画像の表示サイズを縮小 */
     border-radius: 5px;
     margin-top: 10px;
   }

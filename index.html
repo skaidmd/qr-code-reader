@@ -10,9 +10,13 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
-  <!-- ヘッダーは不要とする -->
-  
-  <!-- メインコンテンツ：2つのビュー -->
+  <!-- 切り替えリンク（ナビゲーション） -->
+  <nav id="nav">
+    <a href="#scratch">Scratch QR (LIFF SDK 未使用)</a> |
+    <a href="#scan">Scan QR (LIFF SDK 使用)</a>
+  </nav>
+
+  <!-- Scratch QR ビュー -->
   <div id="scratchView" class="view">
     <h1>Scratch QR (LIFF SDK 未使用)</h1>
     <div class="controls">
@@ -35,10 +39,11 @@
     <div class="card-container" id="scratchHistory"></div>
   </div>
 
-  <div id="scanView" class="view" style="display:none;">
+  <!-- Scan QR ビュー -->
+  <div id="scanView" class="view" style="display: none;">
     <h1>Scan QR (LIFF SDK 使用)</h1>
     <div class="controls">
-      <!-- 初期状態：スキャンボタンは無効 -->
+      <!-- 初期状態は無効。LIFF初期化完了後に有効化 -->
       <button id="scanButton" disabled>QRコードをスキャン</button>
     </div>
     <p id="scanResult">読み取り中...</p>
@@ -50,7 +55,9 @@
     <p class="version">Version X.X.0</p>
   </footer>
 
-  <canvas id="canvas" style="display:none;"></canvas>
+  <!-- 非表示のキャンバス -->
+  <canvas id="canvas" style="display: none;"></canvas>
+
   <script src="script.js"></script>
 </body>
 </html>
