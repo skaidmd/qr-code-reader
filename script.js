@@ -258,4 +258,30 @@ function initApp() {
   }
 }
 
+// LIFF 初期化とアプリ起動処理
+function initApp() {
+    // LIFF SDK が利用可能な環境かどうかをチェック
+    if (window.liff) {
+      // LIFF_ID は先ほど LINE Developers コンソールで発行された値に置き換える
+      const LIFF_ID = '2006845142';
+      liff.init({ liffId: LIFF_ID })
+        .then(() => {
+          console.log('LIFF 初期化成功');
+          // LIFF 初期化後、通常の Web アプリ処理（例: カメラの起動）を開始
+          startCamera();
+        })
+        .catch((err) => {
+          console.error('LIFF init failed:', err);
+          // LIFF 初期化に失敗しても、通常の Web アプリとして動作させる
+          startCamera();
+        });
+    } else {
+      // LIFF SDK が利用できない環境の場合、通常の Web アプリとして処理を開始
+      startCamera();
+    }
+  }
+  
+  // ページ読み込み時に初期化処理を実行
+  window.addEventListener('load', initApp);
+
 window.addEventListener('load', initApp);

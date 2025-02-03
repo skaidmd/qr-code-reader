@@ -3,42 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QRコードリーダー</title>
-  <!-- スタイルシートの読み込み -->
+  <title>QRコードリーダー Top</title>
   <link rel="stylesheet" href="style.css">
-  <!-- 外部ライブラリの読み込み -->
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
-  <h1>QRコードリーダー</h1>
-  <div class="controls">
-    <button id="toggleCamera">📷 カメラ オン</button>
-    <p>読み取り件数: <span id="scanCount">0</span> 件</p>
-    <button id="resetResult">🔄 結果をリセット</button>
-  </div>
-
-  <div class="video-container">
-    <video id="video" autoplay playsinline></video>
-    <div class="scanner-overlay">
-      <div class="overlay-top"></div>
-      <div class="overlay-left"></div>
-      <!-- scanning-area内の案内テキストは削除 -->
-      <div class="scanning-area"></div>
-      <div class="overlay-right"></div>
-      <div class="overlay-bottom"></div>
-    </div>
-    <div id="feedback" class="feedback"></div>
-  </div>
-
-  <p id="result">読み取り中...</p>
-  <div class="card-container" id="scanHistory"></div>
-  <p class="version">Version 2.2.0</p>
-
-  <!-- 非表示のキャンバス -->
-  <canvas id="canvas" style="display:none;"></canvas>
-
-  <!-- JavaScriptファイルの読み込み -->
-  <script src="script.js"></script>
+  <header>
+    <nav>
+      <ul>
+        <li><a href="scratch.html">Scratch QR (既存機能)</a></li>
+        <li><a href="scan.html">Scan QR (LIFF scanCode専用)</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main>
+    <h1>QRコードリーダー</h1>
+    <p>以下のリンクからお好みの機能を選択してください。</p>
+    <ul>
+      <li><a href="scratch.html">Scratch QR (既存機能)</a></li>
+      <li><a href="scan.html">Scan QR (LIFF scanCode専用)</a></li>
+    </ul>
+  </main>
+  <footer>
+    <p class="version">Version 2.2.0</p>
+  </footer>
 </body>
 </html>

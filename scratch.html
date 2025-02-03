@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scratch QR - 既存機能</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+  <header>
+    <nav>
+      <ul>
+        <li><a href="index.html">Top</a></li>
+        <li><a href="scratch.html">Scratch QR</a></li>
+        <li><a href="scan.html">Scan QR</a></li>
+      </ul>
+    </nav>
+  </header>
+  <h1>Scratch QR (既存機能)</h1>
+  <div class="controls">
+    <button id="toggleCamera">📷 カメラ オン</button>
+    <p>読み取り件数: <span id="scanCount">0</span> 件</p>
+    <button id="resetResult">🔄 結果をリセット</button>
+  </div>
+  <div class="video-container">
+    <video id="video" autoplay playsinline></video>
+    <div class="scanner-overlay">
+      <div class="overlay-top"></div>
+      <div class="overlay-left"></div>
+      <div class="scanning-area"></div>
+      <div class="overlay-right"></div>
+      <div class="overlay-bottom"></div>
+    </div>
+    <div id="feedback" class="feedback"></div>
+  </div>
+  <p id="result">読み取り中...</p>
+  <div class="card-container" id="scanHistory"></div>
+  <footer>
+    <p class="version">Version 2.2.0</p>
+  </footer>
+  <canvas id="canvas" style="display:none;"></canvas>
+  <script src="script.js"></script>
+  <script>
+    // ページ読み込み時にLIFF初期化（共通関数 initApp() をscript.js内に実装している場合はその呼び出し）
+    // ここでは、既存機能ページでは必須でなく、通常のWebアプリとして動作させるためにカメラを起動
+    window.addEventListener('load', () => {
+      // LIFF環境か否かにかかわらずカメラ機能を開始
+      startCamera();
+    });
+  </script>
+</body>
+</html>
