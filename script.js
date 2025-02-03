@@ -19,7 +19,7 @@ function sanitizeHTML(str) {
 function initLIFF() {
   return new Promise((resolve, reject) => {
     if (window.liff) {
-      const LIFF_ID = 'YOUR_LIFF_ID'; // 必ず実際のLIFF IDに置き換えてください
+      const LIFF_ID = '2006845142-pmbYDnKB'; // 必ず実際のLIFF IDに置き換えてください
       liff.init({ liffId: LIFF_ID })
         .then(() => {
           console.log('LIFF 初期化成功');
