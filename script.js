@@ -4,6 +4,9 @@ const FEEDBACK_SUPPRESSION_TIME = 3000; // ms
 const SCAN_AREA = { left: 0.2, top: 0.35, width: 0.6, height: 0.3 };
 const SNAPSHOT_SCALE = 0.5;
 
+// LIFF 初期化状況のフラグ
+let isLiffInitialized = false;
+
 // --- Utility: シンプルなサニタイズ処理 ---
 function sanitizeHTML(str) {
   return str.replace(/[&<>"']/g, match => {
@@ -12,24 +15,68 @@ function sanitizeHTML(str) {
   });
 }
 
-// --- 要素取得とグローバル変数 ---
-const video = document.getElementById('video');
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const resultElement = document.getElementById('result');
-const toggleCameraButton = document.getElementById('toggleCamera');
-const resetResultButton = document.getElementById('resetResult');
-const scanHistoryContainer = document.getElementById('scanHistory');
-const scanCountElement = document.getElementById('scanCount');
-const feedbackElement = document.getElementById('feedback');
+// --- 共通の LIFF 初期化処理 ---
+function initLIFF() {
+  return new Promise((resolve, reject) => {
+    if (window.liff) {
+      const LIFF_ID = 'YOUR_LIFF_ID'; // 必ず実際のLIFF IDに置き換えてください
+      liff.init({ liffId: LIFF_ID })
+        .then(() => {
+          console.log('LIFF 初期化成功');
+          isLiffInitialized = true;
+          resolve();
+        })
+        .catch(err => {
+          console.error('LIFF init failed:', err);
+          reject(err);
+        });
+    } else {
+      reject('LIFF SDK が利用できません。');
+    }
+  });
+}
 
-let stream = null;
-let scanning = false;
-let scannedResults = new Set();
-let lastFeedbackTimes = {};
+// --- カメラ制御（Scratch QR 用） ---
+async function startCamera() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    document.getElementById('result').textContent = 'お使いのブラウザはカメラ機能に対応していません。';
+    return;
+  }
+  try {
+    const constraints = { 
+      video: { 
+        facingMode: { ideal: "environment" },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      }
+    };
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    const video = document.getElementById('video');
+    video.srcObject = stream;
+    video.play();
+    // スキャン処理を開始（既存機能は requestAnimationFrame を用いたループでQRコードを検出）
+    scanning = true;
+    scanQR();
+    document.getElementById('toggleCamera').textContent = "📴 カメラ オフ";
+  } catch (error) {
+    console.error('カメラのアクセスに失敗しました:', error);
+    document.getElementById('result').textContent = 'カメラのアクセスに失敗しました。パーミッションなどをご確認ください。';
+  }
+}
+
+function stopCamera() {
+  const video = document.getElementById('video');
+  if (video.srcObject) {
+    video.srcObject.getTracks().forEach(track => track.stop());
+    video.srcObject = null;
+  }
+  scanning = false;
+  document.getElementById('toggleCamera').textContent = "📷 カメラ オン";
+}
 
 // --- スキャン領域の寸法を計算 ---
 function getScanAreaDimensions() {
+  const video = document.getElementById('video');
   return {
     x: Math.floor(video.videoWidth * SCAN_AREA.left),
     y: Math.floor(video.videoHeight * SCAN_AREA.top),
@@ -45,61 +92,19 @@ function getSnapshot() {
   snapshotCanvas.width = Math.floor(width * SNAPSHOT_SCALE);
   snapshotCanvas.height = Math.floor(height * SNAPSHOT_SCALE);
   const snapshotCtx = snapshotCanvas.getContext("2d");
+  const video = document.getElementById('video');
   snapshotCtx.drawImage(video, x, y, width, height, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
   return snapshotCanvas.toDataURL("image/png");
 }
 
-// --- カメラ制御 ---
-async function startCamera() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    resultElement.textContent = 'お使いのブラウザはカメラ機能に対応していません。';
-    return;
-  }
-  try {
-    const constraints = { 
-      video: { 
-        facingMode: { ideal: "environment" },
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
-      }
-    };
-    stream = await navigator.mediaDevices.getUserMedia(constraints);
-    video.srcObject = stream;
-    video.play();
-    scanning = true;
-    scanQR();
-    toggleCameraButton.textContent = "📴 カメラ オフ";
-  } catch (error) {
-    console.error('カメラのアクセスに失敗しました:', error);
-    resultElement.textContent = 'カメラのアクセスに失敗しました。パーミッションやブラウザの対応状況をご確認ください。';
-  }
-}
-
-function stopCamera() {
-  if (stream) {
-    stream.getTracks().forEach(track => track.stop());
-    video.srcObject = null;
-    scanning = false;
-    toggleCameraButton.textContent = "📷 カメラ オン";
-  }
-}
-
-// --- フィードバック表示 ---
-function showFeedback(message) {
-  feedbackElement.textContent = message;
-  feedbackElement.classList.add('show');
-  setTimeout(() => {
-    feedbackElement.classList.remove('show');
-  }, FEEDBACK_DURATION);
-}
-
-// --- QRコードスキャン ---
+// --- QRコードスキャン（Scratch QR 用） ---
 function scanQR() {
   if (!scanning) return;
   requestAnimationFrame(scanQR);
-
+  const video = document.getElementById('video');
   if (video.videoWidth === 0 || video.videoHeight === 0) return;
-
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   try {
@@ -121,8 +126,7 @@ function scanQR() {
     const now = Date.now();
     if (!scannedResults.has(code.data)) {
       scannedResults.add(code.data);
-      // 結果表示ラベルを「直近の読み取り内容:」に変更
-      resultElement.textContent = `直近の読み取り内容: ${code.data}`;
+      document.getElementById('result').textContent = `直近の読み取り内容: ${code.data}`;
       addToHistory(code.data);
       showFeedback("QRコード検出！");
       lastFeedbackTimes[code.data] = now;
@@ -150,34 +154,27 @@ function addToHistory(data) {
     qrContentElement = document.createElement('span');
     qrContentElement.textContent = safeData;
   }
-
   const card = document.createElement("div");
   card.classList.add("card");
-
   const deleteButton = document.createElement("button");
   deleteButton.classList.add("delete-icon");
   deleteButton.setAttribute("aria-label", "この項目を削除");
   deleteButton.textContent = "❌";
   card.appendChild(deleteButton);
-
   const noP = document.createElement("p");
   noP.innerHTML = `<strong>No:</strong> ${no}`;
   card.appendChild(noP);
-
   const captureImage = document.createElement("img");
   captureImage.classList.add("capture-image");
   captureImage.src = getSnapshot();
   captureImage.alt = "QRコードキャプチャ";
   card.appendChild(captureImage);
-
   const qrContentP = document.createElement("p");
   qrContentP.classList.add("qr-content");
   const strongLabel = document.createElement("strong");
-  // 結果カードのラベルも「直近の読み取り内容:」に変更
   strongLabel.textContent = "直近の読み取り内容: ";
   qrContentP.appendChild(strongLabel);
   qrContentP.appendChild(qrContentElement);
-
   const copyButton = document.createElement("button");
   copyButton.classList.add("copy-icon");
   copyButton.setAttribute("aria-label", "QRコードの内容をコピー");
@@ -185,17 +182,16 @@ function addToHistory(data) {
   copyButton.dataset.text = data;
   qrContentP.appendChild(copyButton);
   card.appendChild(qrContentP);
-
   const timeP = document.createElement("p");
   timeP.innerHTML = `<strong>読み取り日時:</strong> ${timestamp}`;
   card.appendChild(timeP);
-
-  scanHistoryContainer.appendChild(card);
+  document.getElementById('scanHistory').appendChild(card);
   updateCount();
 }
 
 function updateCount() {
-  scanCountElement.textContent = document.querySelectorAll('.card').length;
+  const count = document.querySelectorAll('.card').length;
+  document.getElementById('scanCount').textContent = count;
 }
 
 function copyText(text) {
@@ -219,18 +215,23 @@ function copyText(text) {
 }
 
 // --- イベントリスナー ---
-toggleCameraButton.addEventListener('click', () => {
-  scanning ? stopCamera() : startCamera();
+document.getElementById('toggleCamera')?.addEventListener('click', () => {
+  if (scanning) {
+    stopCamera();
+  } else {
+    startCamera();
+  }
 });
 
-resetResultButton.addEventListener('click', () => {
-  resultElement.textContent = "読み取り中...";
-  scanHistoryContainer.innerHTML = "";
-  scannedResults.clear();
+document.getElementById('resetResult')?.addEventListener('click', () => {
+  document.getElementById('result').textContent = "読み取り中...";
+  document.getElementById('scanHistory').innerHTML = "";
+  scannedResults = new Set();
   updateCount();
 });
 
-scanHistoryContainer.addEventListener('click', (event) => {
+// 共通：クリックイベントの委譲（削除・コピーボタン用）
+document.getElementById('scanHistory')?.addEventListener('click', (event) => {
   if (event.target.classList.contains('delete-icon')) {
     event.target.parentElement.remove();
     updateCount();
@@ -239,49 +240,3 @@ scanHistoryContainer.addEventListener('click', (event) => {
     copyText(textToCopy);
   }
 });
-
-// --- LIFF 初期化とアプリ起動 ---
-function initApp() {
-  if (window.liff) {
-    const LIFF_ID = 'YOUR_LIFF_ID'; // 必ず実際のLIFF IDに置き換えてください
-    liff.init({ liffId: LIFF_ID })
-      .then(() => {
-        startCamera();
-      })
-      .catch((err) => {
-        console.error('LIFF init failed:', err);
-        startCamera();
-      });
-  } else {
-    // LIFF SDKが利用できない環境の場合、通常のWebアプリとして動作
-    startCamera();
-  }
-}
-
-// LIFF 初期化とアプリ起動処理
-function initApp() {
-    // LIFF SDK が利用可能な環境かどうかをチェック
-    if (window.liff) {
-      // LIFF_ID は先ほど LINE Developers コンソールで発行された値に置き換える
-      const LIFF_ID = '2006845142';
-      liff.init({ liffId: LIFF_ID })
-        .then(() => {
-          console.log('LIFF 初期化成功');
-          // LIFF 初期化後、通常の Web アプリ処理（例: カメラの起動）を開始
-          startCamera();
-        })
-        .catch((err) => {
-          console.error('LIFF init failed:', err);
-          // LIFF 初期化に失敗しても、通常の Web アプリとして動作させる
-          startCamera();
-        });
-    } else {
-      // LIFF SDK が利用できない環境の場合、通常の Web アプリとして処理を開始
-      startCamera();
-    }
-  }
-  
-  // ページ読み込み時に初期化処理を実行
-  window.addEventListener('load', initApp);
-
-window.addEventListener('load', initApp);

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scan QR (LIFF SDK 使用)</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- jsQR と LIFF SDK の読み込み -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+  <!-- ヘッダーは削除済み -->
+  <h1>Scan QR (LIFF SDK 使用)</h1>
+  <div class="controls">
+    <!-- 初期状態ではボタンを無効化し、LIFF初期化後に有効化 -->
+    <button id="scanButton" disabled>QRコードをスキャン</button>
+  </div>
+  <p id="result">読み取り中...</p>
+  <div class="card-container" id="scanHistory"></div>
+  <footer>
+    <p class="version">Version 1.0.1</p>
+  </footer>
+  <canvas id="canvas" style="display:none;"></canvas>
+  
+  <script src="script.js"></script>
+  <script>
+    // 共通の LIFF 初期化処理（script.js内の initLIFF() を利用）
+    window.addEventListener('load', () => {
+      initLIFF()
+        .then(() => {
+          // 初期化完了後、scanButton を有効化
+          document.getElementById('scanButton').disabled = false;
+        })
+        .catch(err => {
+          console.error('LIFF initialization failed in scan.html:', err);
+          alert('LIFF 初期化に失敗しました。エラー: ' + err);
+        });
+    });
+    
+    // 「QRコードをスキャン」ボタンの処理
+    document.getElementById('scanButton').addEventListener('click', () => {
+      if (window.liff && isLiffInitialized && liff.scanCode) {
+        liff.scanCode()
+          .then(result => {
+            const codeData = result.value; // 読み取り結果
+            document.getElementById('result').textContent = `直近の読み取り内容: ${codeData}`;
+          })
+          .catch(err => {
+            console.error('scanCode error:', err);
+            alert('QRコードのスキャンに失敗しました。');
+          });
+      } else {
+        alert('この機能はLINEミニアプリ内でのみ利用可能です。');
+      }
+    });
+  </script>
+</body>
+</html>

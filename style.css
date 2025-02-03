@@ -159,7 +159,7 @@ body {
   .qr-content {
     word-wrap: break-word;
     overflow-wrap: break-word;
-    white-space: pre-wrap; /* 長いテキストの折り返しを強制 */
+    white-space: pre-wrap; /* 長いテキストの折り返し対応 */
   }
   
   .capture-image {
