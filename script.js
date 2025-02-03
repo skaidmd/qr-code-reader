@@ -1,17 +1,17 @@
-// Constants
+// 定数
 const FEEDBACK_DURATION = 1500;
 const FEEDBACK_SUPPRESSION_TIME = 3000; // ms
 const SCAN_AREA = { left: 0.2, top: 0.35, width: 0.6, height: 0.3 };
 const SNAPSHOT_SCALE = 0.5;
 const LIFF_ID = '2006845142-pmbYDnKB'; // 実際のLIFF ID
 
-// Global variables
+// グローバル変数
 let isLiffInitialized = false;
 let scanning = false;
 let scratchScanResults = new Set();
 let scratchLastFeedbackTimes = {};
 
-// Utility: sanitize HTML
+// --- Utility: HTMLのサニタイズ ---
 function sanitizeHTML(str) {
   return str.replace(/[&<>"']/g, match => {
     const escape = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -19,13 +19,13 @@ function sanitizeHTML(str) {
   });
 }
 
-// --- Common LIFF Initialization ---
+// --- 共通の LIFF 初期化 ---
 function initLIFF() {
   return new Promise((resolve, reject) => {
     if (window.liff) {
       liff.init({ liffId: LIFF_ID })
         .then(() => {
-          console.log('LIFF initialization successful');
+          console.log('LIFF 初期化成功');
           isLiffInitialized = true;
           resolve();
         })
@@ -34,17 +34,29 @@ function initLIFF() {
           reject(err);
         });
     } else {
-      reject('LIFF SDK is not available.');
+      reject('LIFF SDK が利用できません。');
+    }
+  });
+}
+
+// --- タブ更新 ---
+function updateTabs() {
+  const navLinks = document.querySelectorAll('#nav a');
+  navLinks.forEach(link => {
+    if (link.getAttribute('href') === window.location.hash) {
+      link.classList.add('active');
+    } else {
+      link.classList.remove('active');
     }
   });
 }
 
 // ==========================
-// Scratch QR Functions (Existing)
+// Scratch QR 用処理（既存機能）
 // ==========================
 function startScratchQR() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    document.getElementById('scratchResult').textContent = 'お使いのブラウザはカメラ機能に対応していません。';
+    document.getElementById('scratchResult').textContent = 'このブラウザはカメラ機能に対応していません。';
     return;
   }
   const constraints = { 
@@ -64,8 +76,8 @@ function startScratchQR() {
       document.getElementById('toggleCamera').textContent = "📴 カメラ オフ";
     })
     .catch(error => {
-      console.error('Camera access failed:', error);
-      document.getElementById('scratchResult').textContent = 'カメラのアクセスに失敗しました。';
+      console.error('カメラアクセス失敗:', error);
+      document.getElementById('scratchResult').textContent = 'カメラアクセスに失敗しました。';
     });
 }
 
@@ -91,7 +103,7 @@ function scanScratchQR() {
   try {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
   } catch (err) {
-    console.error('Error drawing video on canvas:', err);
+    console.error('キャンバス描画エラー:', err);
     return;
   }
   const { x, y, width, height } = getScanAreaDimensions();
@@ -99,7 +111,7 @@ function scanScratchQR() {
   try {
     imageData = ctx.getImageData(x, y, width, height);
   } catch (err) {
-    console.error('Error getting image data:', err);
+    console.error('ImageData取得エラー:', err);
     return;
   }
   const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
@@ -142,14 +154,14 @@ function getSnapshot() {
 }
 
 // ==========================
-// Scan QR Functions (Using LIFF scanCode)
+// Scan QR 用処理 (LIFF scanCode)
 // ==========================
 function enableScanButton() {
   document.getElementById('scanButton').disabled = false;
 }
 
 function handleScanButtonClick() {
-  if (window.liff && isLiffInitialized && liff.scanCode) {
+  if (window.liff && isLiffInitialized && typeof liff.scanCode === "function") {
     liff.scanCode()
       .then(result => {
         const codeData = result.value;
@@ -166,7 +178,7 @@ function handleScanButtonClick() {
 }
 
 // ==========================
-// History Management (Common)
+// 履歴管理 (共通)
 // ==========================
 function addToHistory(data, type) {
   const timestamp = new Date().toLocaleString();
@@ -188,20 +200,27 @@ function addToHistory(data, type) {
   deleteButton.setAttribute("aria-label", "この項目を削除");
   deleteButton.textContent = "❌";
   card.appendChild(deleteButton);
+  
+  // 履歴配置先のコンテナを取得
+  const container = type === 'scan' ? document.getElementById('scanHistory') : document.getElementById('scratchHistory');
+  const cardCount = container.querySelectorAll('.card').length;
   const noP = document.createElement("p");
-  noP.innerHTML = `<strong>No:</strong> ${document.querySelectorAll('.card').length + 1}`;
+  noP.innerHTML = `<strong>No:</strong> ${cardCount + 1}`;
   card.appendChild(noP);
+  
   const captureImage = document.createElement("img");
   captureImage.classList.add("capture-image");
   captureImage.src = getSnapshot();
   captureImage.alt = "QRコードキャプチャ";
   card.appendChild(captureImage);
+  
   const qrContentP = document.createElement("p");
   qrContentP.classList.add("qr-content");
   const strongLabel = document.createElement("strong");
   strongLabel.textContent = "直近の読み取り内容: ";
   qrContentP.appendChild(strongLabel);
   qrContentP.appendChild(qrContentElement);
+  
   const copyButton = document.createElement("button");
   copyButton.classList.add("copy-icon");
   copyButton.setAttribute("aria-label", "QRコードの内容をコピー");
@@ -209,15 +228,12 @@ function addToHistory(data, type) {
   copyButton.dataset.text = data;
   qrContentP.appendChild(copyButton);
   card.appendChild(qrContentP);
+  
   const timeP = document.createElement("p");
   timeP.innerHTML = `<strong>読み取り日時:</strong> ${timestamp}`;
   card.appendChild(timeP);
   
-  if (type === 'scan') {
-    document.getElementById('scanHistory').appendChild(card);
-  } else {
-    document.getElementById('scratchHistory').appendChild(card);
-  }
+  container.appendChild(card);
   updateCount(type);
 }
 
@@ -269,6 +285,7 @@ function route() {
     window.location.hash = "#scratch";
     return;
   }
+  updateTabs();
   if (hash === "#scratch") {
     document.getElementById('scratchView').style.display = "block";
     document.getElementById('scanView').style.display = "none";
@@ -277,6 +294,7 @@ function route() {
     document.getElementById('scratchView').style.display = "none";
     document.getElementById('scanView').style.display = "block";
     stopScratchQR();
+    // LIFF初期化（Scan用）を実施し、初期化完了後にスキャンボタンを有効化
     initLIFF()
       .then(() => {
         enableScanButton();
@@ -290,6 +308,20 @@ function route() {
 
 window.addEventListener("hashchange", route);
 window.addEventListener("load", route);
+
+// ==========================
+// Tab更新処理
+// ==========================
+function updateTabs() {
+  const navLinks = document.querySelectorAll('#nav a');
+  navLinks.forEach(link => {
+    if (link.getAttribute('href') === window.location.hash) {
+      link.classList.add('active');
+    } else {
+      link.classList.remove('active');
+    }
+  });
+}
 
 // ==========================
 // Event Listeners
@@ -329,22 +361,5 @@ document.getElementById('scanHistory')?.addEventListener('click', (event) => {
   }
 });
 
-// Event listener for Scan QR button
+// Scan QR ボタンのイベント
 document.getElementById('scanButton')?.addEventListener('click', handleScanButtonClick);
-
-function handleScanButtonClick() {
-  if (window.liff && isLiffInitialized && liff.scanCode) {
-    liff.scanCode()
-      .then(result => {
-        const codeData = result.value;
-        document.getElementById('scanResult').textContent = `直近の読み取り内容: ${codeData}`;
-        addToHistory(codeData, 'scan');
-      })
-      .catch(err => {
-        console.error('scanCode error:', err);
-        alert('QRコードのスキャンに失敗しました。');
-      });
-  } else {
-    alert('この機能はLINEミニアプリ内でのみ利用可能です。');
-  }
-}

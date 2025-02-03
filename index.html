@@ -10,13 +10,13 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
-  <!-- 切り替えリンク（ナビゲーション） -->
+  <!-- タブ風ナビゲーション -->
   <nav id="nav">
-    <a href="#scratch">Scratch QR (LIFF SDK 未使用)</a> |
+    <a href="#scratch">Scratch QR (LIFF SDK 未使用)</a>
     <a href="#scan">Scan QR (LIFF SDK 使用)</a>
   </nav>
 
-  <!-- Scratch QR ビュー -->
+  <!-- Scratch QR ビュー（既存機能） -->
   <div id="scratchView" class="view">
     <h1>Scratch QR (LIFF SDK 未使用)</h1>
     <div class="controls">
@@ -39,7 +39,7 @@
     <div class="card-container" id="scratchHistory"></div>
   </div>
 
-  <!-- Scan QR ビュー -->
+  <!-- Scan QR ビュー (LIFF SDK 使用) -->
   <div id="scanView" class="view" style="display: none;">
     <h1>Scan QR (LIFF SDK 使用)</h1>
     <div class="controls">
@@ -51,13 +51,12 @@
   </div>
 
   <footer>
-    <!-- バージョン番号はコミット毎に更新 -->
+    <!-- バージョン番号はコミットごとに更新してください -->
     <p class="version">Version X.X.0</p>
   </footer>
 
   <!-- 非表示のキャンバス -->
   <canvas id="canvas" style="display: none;"></canvas>
-
   <script src="script.js"></script>
 </body>
 </html>

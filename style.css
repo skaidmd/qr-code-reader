@@ -6,20 +6,30 @@ body {
     padding: 20px;
   }
   
-  /* ナビゲーション */
+  /* タブナビゲーション */
   #nav {
     margin-bottom: 20px;
+    border-bottom: 2px solid #ddd;
   }
   #nav a {
+    display: inline-block;
+    padding: 10px 20px;
+    margin-right: 5px;
     text-decoration: none;
     color: #007aff;
+    border: 1px solid transparent;
+    border-bottom: none;
+  }
+  #nav a.active {
+    border: 1px solid #ddd;
+    border-bottom: 2px solid #fff;
+    background-color: #fff;
     font-weight: bold;
-    margin: 0 10px;
   }
   
   /* 各ビュー */
   .view {
-    /* 各ビューの表示・非表示はscript.jsで切り替え */
+    /* ビューごとの表示は script.js で切り替え */
   }
   
   /* 動画エリアコンテナ */
@@ -45,26 +55,22 @@ body {
     top: 0; left: 0; right: 0; bottom: 0;
     pointer-events: none;
   }
-  
   .overlay-top,
   .overlay-bottom,
   .overlay-left,
   .overlay-right {
     background-color: rgba(128, 128, 128, 0.8);
   }
-  
   .overlay-top {
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 35%;
   }
-  
   .overlay-bottom {
     position: absolute;
     bottom: 0; left: 0; right: 0;
     height: 35%;
   }
-  
   .overlay-left {
     position: absolute;
     top: 35%;
@@ -72,7 +78,6 @@ body {
     width: 20%;
     height: 30%;
   }
-  
   .overlay-right {
     position: absolute;
     top: 35%;
@@ -80,14 +85,13 @@ body {
     width: 20%;
     height: 30%;
   }
-  
   .scanning-area {
     position: absolute;
     top: 35%;
     left: 20%;
     width: 60%;
     height: 30%;
-    border: 2px dashed #fff; /* 枠線を白色に変更 */
+    border: 2px dashed #fff; /* 枠線は白色 */
     box-sizing: border-box;
     background-color: transparent;
   }
@@ -107,7 +111,6 @@ body {
     pointer-events: none;
     font-size: 14px;
   }
-  
   .feedback.show {
     opacity: 1;
   }
@@ -124,7 +127,7 @@ body {
     margin: auto;
   }
   
-  /* コントロール */
+  /* コントロール部 */
   .controls {
     display: flex;
     justify-content: center;
@@ -161,14 +164,12 @@ body {
     border: none;
     font-size: 18px;
   }
-  
   .delete-icon {
     position: absolute;
     top: 10px;
     right: 10px;
     color: red;
   }
-  
   .copy-icon {
     margin-left: 5px;
     color: #4CAF50;
@@ -177,11 +178,11 @@ body {
   .qr-content {
     word-wrap: break-word;
     overflow-wrap: break-word;
-    white-space: pre-wrap; /* 折り返し対応 */
+    white-space: pre-wrap; /* 長いテキストの折り返し */
   }
   
   .capture-image {
-    width: 80%; /* キャプチャ画像の表示サイズを縮小 */
+    width: 80%; /* キャプチャ画像の縮小表示 */
     border-radius: 5px;
     margin-top: 10px;
   }
